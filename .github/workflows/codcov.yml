@@ -1,13 +1,12 @@
-name: Codecoverage check
+name: Code Coverage with Coveralls
 
 on:
   push:
     branches:
       - main
-  workflow_dispatch:
 
 jobs:
-  build-pr:
+  test-and-coverage:
     runs-on: ubuntu-latest
     env:
       REPO: starbops
@@ -30,28 +29,16 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ matrix.image }}
-
       - name: Lint
         run: make lint
 
       - name: Run tests with coverage
-        run: make test  
-        
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          file: cover.out 
-          flags: unittests 
-          name: ${{ github.event.pull_request.head.ref }} 
-          
-      - name: Build binaries
-        run: make build
+        run: make test 
 
-      - name: Run end-to-end testing
-        run: make local-e2e-test
+      - name: Install goveralls
+        run: go install github.com/mattn/goveralls@latest
+
+      - name: Upload coverage to Coveralls
+        env:
+          COVERALLS_TOKEN: ${{ secrets.COVERALLS_TOKEN }} 
+        run: goveralls -coverprofile=cover.out -service=github
